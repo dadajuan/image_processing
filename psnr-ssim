@@ -1,0 +1,37 @@
+import os
+import cv2
+from skimage.metrics import peak_signal_noise_ratio
+from skimage.metrics import structural_similarity
+from numpy import *
+
+result_dir = 'D:/Desktop/6.2deeplearning/G1-6-bicubic/'
+GT_dir = 'D:/Desktop/6.2deeplearning/G1-6HR/'
+result_images = [] #结果图片名字列表
+GT_image = []     #GT图片名字列表
+image_number = [] #图片读取求指标的id
+image_name = []   #图片读取求指标的id 对应的图片名
+psnr_number = []  #psnr值列表
+ssim_number = []  #ssim值列表
+
+
+GT_name_path = [os.path.join(GT_dir, i) for i in os.listdir(GT_dir)]
+result_name_path = [os.path.join(result_dir, i) for i in os.listdir(result_dir)]
+for i in range(len(GT_name_path)):
+    print(i)
+    GT = cv2.imread(GT_name_path[i])
+    result = cv2.imread(result_name_path[i])
+    psnr = peak_signal_noise_ratio(GT, result)
+    print('psnr_{} is:{}:'.format(i, psnr))
+    psnr_number.append(psnr)
+    ssim = structural_similarity(GT, result, multichannel=True)
+    print('ssim_{} is:{}:'.format(i, ssim))
+    ssim_number.append(ssim)
+print(psnr_number)
+print(ssim_number)
+
+print('一共{}张，pnsr的均值{}，其中最大的是{}，最大的值第{}张：'.format(len(psnr_number), mean(psnr_number), max(psnr_number), psnr_number.index(max(psnr_number))+1))
+print('一共{}张，ssim的均值{}，其中最大的是{}张，最大的值第{}张：'.format(len(ssim_number), mean(ssim_number), max(ssim_number), ssim_number.index(max(ssim_number))+1))
+
+exit()
+
+
