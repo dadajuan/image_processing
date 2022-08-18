@@ -1,0 +1,139 @@
+import torch
+import wandb
+
+import pprint
+"""
+***第一步：首先定义这个sweep，以及这个sweep以什么方式去寻找数据，即创造一个字典
+"""
+sweep_config = {
+    'method': 'random'
+    }
+parameters_dict = {
+    'optimizer': {
+        'values': ['adam', 'sgd']
+        },
+    'fc_layer_size': {
+        'values': [128, 256, 512]
+        },
+    'dropout': {
+          'values': [0.3, 0.4, 0.5]
+        },
+    }
+
+sweep_config['parameters'] = parameters_dict
+#不让某个参数更新
+parameters_dict.update({
+    'epochs': {
+        'value': 1}
+    })
+#定义参数的更新形式
+parameters_dict.update({
+    'learning_rate': {
+        # a flat distribution between 0 and 0.1
+        'distribution': 'uniform',
+        'min': 0,
+        'max': 0.1
+      },
+    'batch_size': {
+        # integers between 32 and 256
+        # with evenly-distributed logarithms
+        'distribution': 'q_log_uniform_values',
+        'q': 8,
+        'min': 32,
+        'max': 256,
+      }
+    })
+pprint.pprint(sweep_config) #嵌套字典
+
+"""
+***第二步：初始化sweep，然后把这个扫描配置词典进行扫描,
+        返回一个id，以及对应的网络地址。
+"""
+sweep_id = wandb.sweep(sweep_config, project="pytorch-sweeps-demo")  #这个id里面已经存了config
+
+"""搭建网络以及一些必要的东西"""
+import torch
+import torch.optim as optim
+import torch.nn.functional as F
+import torch.nn as nn
+from torchvision import datasets, transforms
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+def train(config=None):
+    # Initialize a new wandb run
+    with wandb.init(config=config):
+        # If called by wandb.agent, as below,
+        # this config will be set by Sweep Controller
+        config = wandb.config
+
+        loader = build_dataset(config.batch_size)
+        network = build_network(config.fc_layer_size, config.dropout)
+        optimizer = build_optimizer(network, config.optimizer, config.learning_rate)
+
+        for epoch in range(config.epochs):
+            avg_loss = train_epoch(network, loader, optimizer)
+            wandb.log({"loss": avg_loss, "epoch": epoch})
+
+
+def build_dataset(batch_size):
+    transform = transforms.Compose(
+        [transforms.ToTensor(),
+         transforms.Normalize((0.1307,), (0.3081,))])
+    # download MNIST training dataset
+    dataset = datasets.MNIST(".", train=True, download=True,
+                             transform=transform)
+    sub_dataset = torch.utils.data.Subset(
+        dataset, indices=range(0, len(dataset), 5))
+    loader = torch.utils.data.DataLoader(sub_dataset, batch_size=batch_size)
+
+    return loader
+
+
+def build_network(fc_layer_size, dropout):
+    network = nn.Sequential(  # fully-connected, single hidden layer
+        nn.Flatten(),
+        nn.Linear(784, fc_layer_size), nn.ReLU(),
+        nn.Dropout(dropout),
+        nn.Linear(fc_layer_size, 10),
+        nn.LogSoftmax(dim=1))
+
+    return network.to(device)
+
+
+def build_optimizer(network, optimizer, learning_rate):
+    if optimizer == "sgd":
+        optimizer = optim.SGD(network.parameters(),
+                              lr=learning_rate, momentum=0.9)
+    elif optimizer == "adam":
+        optimizer = optim.Adam(network.parameters(),
+                               lr=learning_rate)
+    return optimizer
+
+
+def train_epoch(network, loader, optimizer):
+    cumu_loss = 0
+    for _, (data, target) in enumerate(loader):
+        data, target = data.to(device), target.to(device)
+        optimizer.zero_grad()
+
+        # ➡ Forward pass
+        loss = F.nll_loss(network(data), target)
+        cumu_loss += loss.item()
+
+        # ⬅ Backward pass + weight update
+        loss.backward()
+        optimizer.step()
+
+        wandb.log({"batch loss": loss.item()})
+
+    return cumu_loss / len(loader)
+
+"""
+***第三步：启动这个sweep agent, 传入一个id, 传入一个函数，
+"""
+#一共有几个需要更新的参数，这个train函数里面要加上这个上一个定义的那个sweep——id里面的那些参数，也就是说你这个函数
+#里面要有这个有多个选项备选的一个参数，可以先定义这个参数范围，然后在搭建自己网络的时候，网络里面的一些参数是用这个代替的，最后
+#这个5 应该是指一共有几个可变的参数即可选的参数
+
+wandb.agent(sweep_id, train, count=5)
