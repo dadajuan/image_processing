@@ -1,0 +1,12 @@
+#关于图像扁平化的神经网络代码，即卷积出的地方和刚输入的地方
+import torch
+from torch import nn
+def get_model(dropout):
+    "A simple model"
+    model = nn.Sequential(nn.Flatten(),  #这个可以把图像直接拉平
+                         nn.Linear(28*28, 256),
+                         nn.BatchNorm1d(256),
+                         nn.ReLU(),
+                         nn.Dropout(dropout),
+                         nn.Linear(256,10)).to(device)
+    return model
