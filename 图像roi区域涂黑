@@ -1,0 +1,15 @@
+h0, w0 = img.shape[:2]
+bg_img = img.copy()
+for ibox in self.labels[index]:
+    ix1 = int(ibox[1] * w0 - ibox[3] * w0 * 0.5)
+    iy1 = int(ibox[2] * h0 - ibox[4] * h0 * 0.5)
+    ix2 = int(ix1 + ibox[3] * w0)
+    iy2 = int(iy1 + ibox[4] * h0)
+    ix1 = ix1 if ix1 < w0 else w0 - 1
+    iy1 = iy1 if iy1 < h0 else h0 - 1
+    ix2 = ix2 if ix2 < w0 else w0 - 1
+    iy2 = iy2 if iy2 < h0 else h0 - 1
+    iw = ix2 - ix1
+    ih = iy2 - iy1
+    #print(bg_img.shape, iy1,iy2,ix1,ix2, ibox)
+    bg_img[iy1:iy2, ix1:ix2] = np.zeros((ih, iw, 3), np.uint8)
