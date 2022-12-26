@@ -1,0 +1,30 @@
+
+
+path = 'D:/Desktop/12.11responce/LMT/Tapping_stft-32-8' #总的目录
+img_root = os.listdir(path)
+print(img_root)
+#修改文件夹下所有文件的名字
+# for i in range(len(img_root)):
+#     imgs = os.listdir(os.path.join(path, img_root[i]))
+#     print(imgs)
+#     print(len(imgs))
+#     newname = []
+#     for j in range(len(imgs)):
+#         #newname[j] = imgs[j].replace('.txt.jpg', '.jpg', 1)
+#         newname.append(imgs[j].replace('.txt.jpg', '.jpg'))
+#         os.rename(os.path.join(path+"/"+img_root[i], imgs[j]), os.path.join(path+"/"+img_root[i], newname[j]))
+
+
+# 修改所有文件夹下的子目录里面的图片的形状
+
+for i in range(len(img_root)):
+    imgs = os.listdir(os.path.join(path, img_root[i]))
+    print(imgs)
+    print(len(imgs))
+    for j in range(len(imgs)):
+        img = Image.open(os.path.join(path+'/'+img_root[i], imgs[j]))
+        new_img = img.resize((128, 128), Image.BILINEAR)
+       #new_img.save(home)
+        if not os.path.isdir(path_out + f"/{img_root[i]}"):
+            os.mkdir(path_out + f"/{img_root[i]}")
+        new_img.save(os.path.join(path_out + f"/{img_root[i]}", imgs[j]))
