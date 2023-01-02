@@ -28,3 +28,25 @@ for i in range(len(img_root)):
         if not os.path.isdir(path_out + f"/{img_root[i]}"):
             os.mkdir(path_out + f"/{img_root[i]}")
         new_img.save(os.path.join(path_out + f"/{img_root[i]}", imgs[j]))
+def reshape_batch_files(path, path_out):
+    img_root = os.listdir(path)
+    for i in range(len(img_root)):
+        imgs = os.listdir(os.path.join(path, img_root[i]))
+        print(imgs)
+        print(len(imgs))
+        for j in range(len(imgs)):
+            img = Image.open(os.path.join(path+'/'+img_root[i], imgs[j]))
+            new_img = img.resize((32, 32), Image.BILINEAR)
+
+            if not os.path.isdir(path_out + f"/{img_root[i]}"):
+                os.mkdir(path_out + f"/{img_root[i]}")
+
+            new_img.save(os.path.join(path_out + f"/{img_root[i]}", imgs[j]))
+
+# 修改某个文件夹下的所有图片的形状
+def reshape_file(path, path_out):
+    imgs = os.listdir(path)
+    for i in range(len(imgs)):
+        img = Image.open(os.path.join(path + '/' + imgs[i]))
+        new_img = img.resize((32, 32), Image.BILINEAR)
+        new_img.save(os.path.join(path_out, imgs[i]))
